@@ -1,0 +1,10 @@
+{
+  "name": "Codespace Proxy Devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:1": {}
+  },
+  "forwardPorts": [8080],
+  "postCreateCommand": "npm install",
+  "remoteUser": "vscode"
+}
