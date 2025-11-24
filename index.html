@@ -3,104 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Codespace Proxy — Private Server</title>
+  <title>Codespace Proxy — Easy Setup</title>
   <style>
     :root{
-      --bg:#0f1115;
-      --panel:#121417;
-      --accent:#8ab4f8;
-      --muted:#9aa4b2;
-      --spotify:#1db954;
-      --glass: rgba(255,255,255,0.04);
-      --card:#15161a;
-      --danger:#ff6b6b;
+      --bg:#0f1115; --panel:#121417; --accent:#8ab4f8; --muted:#9aa4b2; --spotify:#1db954;
+      --glass: rgba(255,255,255,0.04); --card:#15161a; --danger:#ff6b6b;
     }
-
     *{box-sizing:border-box;font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif}
-
-    body{
-      margin:0;
-      background:linear-gradient(180deg,#0b0c10 0%, #0f1115 100%);
-      color:#e6eef8;
-      min-height:100vh;
-    }
-
-    /* Chrome-like topbar */
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:10px 14px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-      border-bottom:1px solid rgba(255,255,255,0.02);
-      backdrop-filter: blur(4px);
-    }
-    .chrome-left{display:flex;align-items:center;gap:12px}
-    .circles{display:flex;gap:6px}
-    .c{width:12px;height:12px;border-radius:50%;display:inline-block}
-    .red{background:#ff5f57}
-    .yellow{background:#ffbd2e}
-    .green{background:#28c840}
-    .address{opacity:0.9;font-weight:600}
-    .chrome-right{display:flex;align-items:center;gap:10px}
-    .status-dot{color:var(--spotify);font-weight:700}
-
-    /* Layout */
+    body{margin:0;background:linear-gradient(180deg,#0b0c10,#0f1115);color:#e6eef8;min-height:100vh}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-bottom:1px solid rgba(255,255,255,0.02);backdrop-filter: blur(4px)}
+    .chrome-left{display:flex;align-items:center;gap:12px}.circles{display:flex;gap:6px}.c{width:12px;height:12px;border-radius:50%;display:inline-block}
+    .red{background:#ff5f57}.yellow{background:#ffbd2e}.green{background:#28c840}.address{opacity:0.9;font-weight:600}
     .main{display:flex;gap:20px;padding:24px}
-    .left-panel{
-      width:220px;background:linear-gradient(180deg,var(--panel),#0f1215);border-radius:10px;padding:18px;
-      display:flex;flex-direction:column;align-items:stretch;gap:18px;
-      box-shadow: 0 4px 24px rgba(2,6,23,0.6);
-    }
+    .left-panel{width:220px;background:linear-gradient(180deg,var(--panel),#0f1215);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:18px;box-shadow: 0 4px 24px rgba(2,6,23,0.6)}
     .logo{background:linear-gradient(120deg,var(--accent),#6ee7b7);padding:14px;border-radius:8px;font-weight:700;text-align:center}
     .nav{background:transparent;border:0;color:var(--muted);padding:10px 12px;text-align:left;border-radius:8px;cursor:pointer}
-    .nav.active{background:var(--glass);color:var(--accent)}
-    .footer{margin-top:auto;font-size:12px;color:var(--muted)}
-
-    /* Content */
-    .content{flex:1;min-height:360px}
-    .card{background:linear-gradient(180deg,var(--card), #0e1114);padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
-    .banner{
-      border-radius:10px;padding:12px;margin-bottom:12px;
-      background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.03);
-    }
+    .nav.active{background:var(--glass);color:var(--accent)}.footer{margin-top:auto;font-size:12px;color:var(--muted)}
+    .content{flex:1;min-height:360px}.card{background:linear-gradient(180deg,var(--card), #0e1114);padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
+    .banner{border-radius:10px;padding:12px;margin-bottom:12px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
     .banner.warn{border-color: rgba(255,107,107,0.18); background: linear-gradient(90deg, rgba(255,107,107,0.03), rgba(255,255,255,0.01));}
     label{display:block;margin-top:12px;color:var(--muted);font-size:13px}
     input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit;margin-top:6px}
-    .row{display:flex;gap:10px;margin-top:12px}
-    button{padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
-    .primary{background:var(--accent);color:#02122b;font-weight:700}
-    .secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
-    .muted{color:var(--muted)}
-    .result{margin-top:14px;padding:10px;border-radius:8px;background:rgba(0,0,0,0.25);font-size:13px;color:var(--muted)}
-    .howto{margin-top:12px;font-size:13px;color:var(--muted)}
-    code{background:rgba(255,255,255,0.03);padding:3px 6px;border-radius:6px}
-    pre{background:rgba(0,0,0,0.35);padding:10px;border-radius:8px;overflow:auto;font-size:13px;color:#d7eefc}
-
-    /* Responsive tweaks */
-    @media (max-width: 880px) {
-      .main { flex-direction: column; padding: 12px; }
-      .left-panel { width: 100%; flex-direction: row; align-items:center; gap:12px; padding:12px; border-radius:10px; }
-      .left-panel nav { display:flex; gap:8px; }
-      .left-panel .logo { padding:8px; min-width:48px; text-align:center; }
-      .content { width:100% }
-    }
+    .row{display:flex;gap:10px;margin-top:12px}button{padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
+    .primary{background:var(--accent);color:#02122b;font-weight:700}.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .muted{color:var(--muted)}.result{margin-top:14px;padding:10px;border-radius:8px;background:rgba(0,0,0,0.25);font-size:13px;color:var(--muted)}
+    code{background:rgba(255,255,255,0.03);padding:3px 6px;border-radius:6px}pre{background:rgba(0,0,0,0.35);padding:10px;border-radius:8px;overflow:auto;font-size:13px;color:#d7eefc}
+    .small{font-size:13px;color:var(--muted)}
+    @media (max-width: 880px) {.main { flex-direction: column; padding: 12px; } .left-panel { width: 100%; flex-direction: row; align-items:center; gap:12px; padding:12px; } .left-panel nav { display:flex; gap:8px; } .content { width:100% } }
   </style>
 </head>
 <body>
   <div class="topbar">
     <div class="chrome-left">
-      <div class="circles">
-        <span class="c red"></span>
-        <span class="c yellow"></span>
-        <span class="c green"></span>
-      </div>
+      <div class="circles"><span class="c red"></span><span class="c yellow"></span><span class="c green"></span></div>
       <div class="address">Codespace Proxy</div>
     </div>
-    <div class="chrome-right">
-      <div class="status-dot" id="status-dot">●</div>
-    </div>
+    <div class="chrome-right"><div class="status-dot" id="status-dot">●</div></div>
   </div>
 
   <div class="main">
@@ -115,14 +53,27 @@
     </aside>
 
     <section class="content">
-      <h1>Private Proxy</h1>
-      <p class="muted">Run this Codespace and set the target upstream you want to expose privately.</p>
+      <h1>Private Proxy — Super Easy Admin Setup</h1>
+      <p class="muted">Open this page in your Codespace preview. If ADMIN_TOKEN is not set, follow the simple steps below.</p>
 
       <div class="card">
         <div id="setup-banner" class="banner" style="display:none;"></div>
 
+        <div id="setup-area" style="display:none;">
+          <h3>Step 1 — Create admin token (one-click)</h3>
+          <p class="small">You can generate a secure token in your browser or paste your own. This token will be written to <code>.env</code> on the server (DO NOT commit).</p>
+          <div class="row">
+            <button id="generate" class="secondary">Generate token</button>
+            <button id="save-token" class="primary">Save Admin Token to Server (.env)</button>
+          </div>
+          <label>Admin token (editable)</label>
+          <input id="new-token" placeholder="Click generate or paste token here" />
+          <div class="small">After saving, admin actions are enabled immediately without restart.</div>
+          <hr style="margin:14px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)" />
+        </div>
+
         <label>Admin token (x-admin-token header)</label>
-        <input id="token" placeholder="Paste your ADMIN_TOKEN here" />
+        <input id="token" placeholder="Paste your ADMIN_TOKEN here (or use setup above)" />
         <label>Upstream target URL</label>
         <input id="target" placeholder="https://example.com" />
         <div class="row">
@@ -134,8 +85,7 @@
 
         <div class="howto">
           <h4>Using the proxy</h4>
-          <p>After configuration, your proxy base path is <code>/p/</code>. Example: <code>/p/path/to/resource</code> will be forwarded to the configured upstream.</p>
-          <p class="muted">Note: Admin configuration requires ADMIN_TOKEN to be set as an environment variable on the server process (not only in this UI).</p>
+          <p class="muted">After configuration, your proxy base path is <code>/p/</code>. Example: <code>/p/path/to/resource</code> will be forwarded to the configured upstream.</p>
         </div>
       </div>
     </section>
@@ -143,13 +93,18 @@
 
   <script>
     (function(){
+      const setupBanner = document.getElementById('setup-banner');
+      const setupArea = document.getElementById('setup-area');
+      const generateBtn = document.getElementById('generate');
+      const saveTokenBtn = document.getElementById('save-token');
+      const newTokenInput = document.getElementById('new-token');
+
       const tokenInput = document.getElementById('token');
       const targetInput = document.getElementById('target');
       const setBtn = document.getElementById('set-target');
       const statusBtn = document.getElementById('status');
       const result = document.getElementById('result');
       const statusDot = document.getElementById('status-dot');
-      const banner = document.getElementById('setup-banner');
 
       function show(msg, ok = true){
         result.style.color = ok ? '#bfe8ff' : '#ffb3b3';
@@ -161,34 +116,42 @@
         targetInput.disabled = disabled;
         setBtn.disabled = disabled;
         statusBtn.disabled = disabled;
-        if (disabled) {
-          setBtn.style.opacity = '0.5';
-        } else {
-          setBtn.style.opacity = '1';
+        if (disabled) { setBtn.style.opacity = '0.5'; } else { setBtn.style.opacity = '1'; }
+      }
+
+      // generate secure token in browser
+      function generateToken() {
+        try {
+          const a = new Uint8Array(24);
+          crypto.getRandomValues(a);
+          return Array.from(a).map(b => ('0' + b.toString(16)).slice(-2)).join('');
+        } catch (e) {
+          // fallback
+          return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
         }
       }
 
-      async function fetchInfo(){
+      async function fetchInfo() {
         try {
           const r = await fetch('/api/info');
           const j = await r.json();
           if (!j.adminConfigured) {
-            // show big instructions and disable configure button
-            banner.classList.add('warn');
-            banner.style.display = 'block';
-            banner.innerHTML = '<strong style="color:var(--danger);">SETUP REQUIRED — ADMIN_TOKEN NOT SET</strong>' +
-              '<p style="margin:8px 0;color:var(--muted);">This server process is running without ADMIN_TOKEN configured. You must set ADMIN_TOKEN in the Codespace environment or create a .env file and restart the server. Until then you cannot configure the proxy.</p>' +
-              '<p style="margin:8px 0;"><strong>Quick steps (copy/paste):</strong></p>' +
-              '<pre># Generate a token (example)\nopenssl rand -hex 32\n\n# Create .env (DO NOT commit this file)\ncat > .env <<EOF\nADMIN_TOKEN=YOUR_GENERATED_TOKEN\nPORT=8080\nEOF\n\n# Restart the server\nnpm start</pre>' +
-              '<p style="margin:8px 0;color:var(--muted)">After restarting with ADMIN_TOKEN set, refresh this page and you will be able to configure the proxy.</p>';
+            // show setup UI
+            setupArea.style.display = 'block';
+            setupBanner.classList.add('warn');
+            setupBanner.style.display = 'block';
+            setupBanner.innerHTML = '<strong style="color:var(--danger);">SETUP: Admin token not found</strong>' +
+              '<p style="margin:6px 0;color:var(--muted)">Click "Generate token" then "Save Admin Token to Server (.env)" — the server will create <code>.env</code> and activate the token.</p>' +
+              '<p style="margin:6px 0;color:var(--muted)"><strong>Warning:</strong> DO NOT commit <code>.env</code> to git. Add it to <code>.gitignore</code>.</p>';
             setDisabled(true);
             statusDot.textContent = '○';
             statusDot.style.color = '#ffb86b';
             return;
           } else {
-            banner.style.display = 'none';
+            // admin configured
+            setupArea.style.display = 'none';
+            setupBanner.style.display = 'none';
             setDisabled(false);
-            // reflect configured target status
             if (j.configuredTarget) {
               show('Proxy is configured. Target: ' + j.target);
               statusDot.textContent = '●';
@@ -200,12 +163,42 @@
             }
           }
         } catch (e) {
-          banner.style.display = 'block';
-          banner.classList.remove('warn');
-          banner.innerHTML = '<strong style="color:var(--accent);">Unable to contact /api/info</strong><p style="color:var(--muted)">Network error: ' + e.message + '</p>';
+          setupBanner.style.display = 'block';
+          setupBanner.classList.remove('warn');
+          setupBanner.innerHTML = '<strong style="color:var(--accent)">Cannot contact server</strong><p style="color:var(--muted)">Network error: ' + e.message + '</p>';
           setDisabled(true);
         }
       }
+
+      generateBtn.addEventListener('click', () => {
+        const t = generateToken();
+        newTokenInput.value = t;
+        show('Token generated (copy/paste or save to server below).');
+      });
+
+      saveTokenBtn.addEventListener('click', async () => {
+        const newToken = newTokenInput.value.trim();
+        if (!newToken || newToken.length < 16) { show('Provide/generate a token (min 16 chars).', false); return; }
+        try {
+          const r = await fetch('/api/setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newToken })
+          });
+          const j = await r.json();
+          if (r.ok) {
+            // copy to admin token input so user can use it
+            tokenInput.value = newToken;
+            show('Admin token saved to server and activated. Paste it in the Admin token field if not auto-filled.');
+            // re-fetch info to enable admin UI
+            setTimeout(fetchInfo, 300);
+          } else {
+            show('Setup error: ' + (j && j.message ? j.message : j.error || r.status), false);
+          }
+        } catch (e) {
+          show('Network error: ' + e.message, false);
+        }
+      });
 
       async function checkStatus(){
         const token = tokenInput.value.trim();
