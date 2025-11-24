@@ -1,43 +1,65 @@
-# Codespace Proxy Starter
+```markdown
+# Codespace Proxy Starter — UPDATED (Super-easy ADMIN_TOKEN setup)
 
-This repo is a minimal starter for running a private proxy inside a GitHub Codespace. Each person who creates a Codespace from this repo can configure their own upstream target and use the Codespace-forwarded port as their private proxy endpoint.
+This repo runs a small private proxy inside a GitHub Codespace. Each Codespace gets its own instance and you must have an ADMIN_TOKEN so only *you* can configure the proxy target.
 
-Features
-- Single upstream target per Codespace (simple, less risk of open proxy).
-- ADMIN_TOKEN is required to configure the target.
-- Frontend UI with a Chrome/Spotify/Tor-inspired look & feel to make setup easy.
+I made setup extremely easy: if ADMIN_TOKEN is not already set in the environment, the web UI includes a one-click/one-paste setup flow that writes a `.env` file for you and activates the token immediately — no manual file editing required.
 
-Getting started (quick)
-1. Fork this repository and open it in a GitHub Codespace.
-2. In the Codespace, set an environment variable `ADMIN_TOKEN` (in Codespaces you can set this via the Codespace "Environment variables" UI or create a .env file).
-   - Example .env (copy from .env.example):
-     ADMIN_TOKEN=your-strong-secret
-3. Start the server:
+WARNING: Do NOT commit `.env` or your ADMIN_TOKEN to git. Treat it like any secret.
+
+---
+
+## Quickest path — really easy (download index.html or open the Codespace preview)
+
+1. Open the repo in a GitHub Codespace or run locally:
    npm install
    npm start
-4. Expose port 8080 in Codespaces (Ports view) and open it in browser. The UI is served at `/`.
-5. In the UI, set the upstream target (for example `https://example.com`) — this requires the ADMIN_TOKEN.
-   - The server will return the proxy base path (`/p/`). Any request to `/p/<path>` will be forwarded to `https://example.com/<path>`.
 
-Security & responsible use
-- Do NOT run this as an open, unauthenticated public proxy. Keep ADMIN_TOKEN secret, and optionally restrict allowed upstream hosts in the code.
-- Add logging, rate-limiting, allowed-host checks, and TLS termination where appropriate for production.
-- Avoid using this to access services you don't have permission to access.
+2. Open the forwarded web preview (port 8080) and visit `/`:
+   - If you haven't set ADMIN_TOKEN in the environment, the UI will show a big "SETUP" box.
+   - Click "Generate token" or paste one you created yourself.
+   - Click "Save Admin Token to Server (.env)" — the server will create a `.env`, activate the token immediately (no restart required), and enable the admin controls.
 
-How it works
-- POST /api/config { target: "https://site.example" } with header `x-admin-token: <ADMIN_TOKEN>`
-  - Sets the upstream target for this Codespace instance.
-- Any requests to /p/* will be forwarded to the configured upstream.
-- UI is static files in `public/`.
+3. Now paste the token into the "Admin token" field (the UI auto-fills on success) and add the upstream target URL.
+   - Click "Configure Proxy".
+   - After configuration, `/p/your/path` will proxy to the configured upstream.
 
-Development
-- Use `npm run dev` to run with nodemon.
-- The repository includes a .devcontainer to make Codespaces experience smoother.
+---
 
-Extending
-- Add allowed hosts validation to /api/config.
-- Add basic auth / per-path mapping for multiple upstreams.
-- Add TLS in front (or use Codespaces built-in HTTPS forwarding where available).
-- Add rate-limits and access logs before sharing the public port.
+## Why this is safe-ish and what to watch for
 
-License: MIT
+- The convenience setup endpoint (/api/setup) is only available when no ADMIN_TOKEN is set. Once a token exists, setup is disabled.
+- The server writes a `.env` file in the working directory with the token. This makes the value persistent across restarts but also means you must NOT commit `.env` to git.
+- For production or shared publicly exposed services, set ADMIN_TOKEN via Codespaces environment or a secret store and avoid writing tokens into files.
+- This starter is intended for private, per-Codespace use. Add host whitelisting, rate-limits, and logging before exposing.
+
+---
+
+## Commands / copy-paste (super short)
+
+Generate a token:
+openssl rand -hex 32
+or
+node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+
+Start:
+npm install
+npm start
+
+If you run locally you can also POST setup with curl (only when no token exists yet):
+curl -X POST http://localhost:8080/api/setup -H "Content-Type: application/json" -d '{"newToken":"PASTE_TOKEN_HERE"}'
+
+Then configure:
+curl -X POST http://localhost:8080/api/config -H "Content-Type: application/json" -H "x-admin-token: PASTE_TOKEN_HERE" -d '{"target":"https://example.com"}'
+
+Check:
+curl -H "x-admin-token: PASTE_TOKEN_HERE" http://localhost:8080/api/status
+
+---
+
+## Extra safety tips
+- Add `.env` to `.gitignore` (if not already).
+- Only share your Codespace port with people you trust.
+- Add allowed-hosts validation and rate-limiting before exposing publicly.
+
+```
