@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Codespace Proxy — Private Server</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="chrome-left">
+      <div class="circles">
+        <span class="c red"></span>
+        <span class="c yellow"></span>
+        <span class="c green"></span>
+      </div>
+      <div class="address">Codespace Proxy</div>
+    </div>
+    <div class="chrome-right">
+      <div class="status-dot" id="status-dot">●</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <aside class="left-panel">
+      <div class="logo">CP</div>
+      <nav>
+        <button class="nav active">Proxy</button>
+        <button class="nav">Logs</button>
+        <button class="nav">Settings</button>
+      </nav>
+      <div class="footer">Private Codespace Instance</div>
+    </aside>
+
+    <section class="content">
+      <h1>Private Proxy</h1>
+      <p class="muted">Run this Codespace and set the target upstream you want to expose privately.</p>
+
+      <div class="card">
+        <label>Admin token (x-admin-token header)</label>
+        <input id="token" placeholder="Paste your ADMIN_TOKEN here" />
+        <label>Upstream target URL</label>
+        <input id="target" placeholder="https://example.com" />
+        <div class="row">
+          <button id="set-target" class="primary">Configure Proxy</button>
+          <button id="status" class="secondary">Check Status</button>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div class="howto">
+          <h4>Using the proxy</h4>
+          <p>After configuration, your proxy base path is <code>/p/</code>. Example: <code>/p/path/to/resource</code> will be forwarded to the configured upstream.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
