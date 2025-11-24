@@ -13,6 +13,7 @@
       --spotify:#1db954;
       --glass: rgba(255,255,255,0.04);
       --card:#15161a;
+      --danger:#ff6b6b;
     }
 
     *{box-sizing:border-box;font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif}
@@ -59,6 +60,12 @@
     /* Content */
     .content{flex:1;min-height:360px}
     .card{background:linear-gradient(180deg,var(--card), #0e1114);padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
+    .banner{
+      border-radius:10px;padding:12px;margin-bottom:12px;
+      background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .banner.warn{border-color: rgba(255,107,107,0.18); background: linear-gradient(90deg, rgba(255,107,107,0.03), rgba(255,255,255,0.01));}
     label{display:block;margin-top:12px;color:var(--muted);font-size:13px}
     input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit;margin-top:6px}
     .row{display:flex;gap:10px;margin-top:12px}
@@ -69,6 +76,7 @@
     .result{margin-top:14px;padding:10px;border-radius:8px;background:rgba(0,0,0,0.25);font-size:13px;color:var(--muted)}
     .howto{margin-top:12px;font-size:13px;color:var(--muted)}
     code{background:rgba(255,255,255,0.03);padding:3px 6px;border-radius:6px}
+    pre{background:rgba(0,0,0,0.35);padding:10px;border-radius:8px;overflow:auto;font-size:13px;color:#d7eefc}
 
     /* Responsive tweaks */
     @media (max-width: 880px) {
@@ -111,6 +119,8 @@
       <p class="muted">Run this Codespace and set the target upstream you want to expose privately.</p>
 
       <div class="card">
+        <div id="setup-banner" class="banner" style="display:none;"></div>
+
         <label>Admin token (x-admin-token header)</label>
         <input id="token" placeholder="Paste your ADMIN_TOKEN here" />
         <label>Upstream target URL</label>
@@ -125,6 +135,7 @@
         <div class="howto">
           <h4>Using the proxy</h4>
           <p>After configuration, your proxy base path is <code>/p/</code>. Example: <code>/p/path/to/resource</code> will be forwarded to the configured upstream.</p>
+          <p class="muted">Note: Admin configuration requires ADMIN_TOKEN to be set as an environment variable on the server process (not only in this UI).</p>
         </div>
       </div>
     </section>
@@ -138,15 +149,67 @@
       const statusBtn = document.getElementById('status');
       const result = document.getElementById('result');
       const statusDot = document.getElementById('status-dot');
+      const banner = document.getElementById('setup-banner');
 
       function show(msg, ok = true){
         result.style.color = ok ? '#bfe8ff' : '#ffb3b3';
         result.textContent = msg;
       }
 
+      function setDisabled(disabled) {
+        tokenInput.disabled = disabled;
+        targetInput.disabled = disabled;
+        setBtn.disabled = disabled;
+        statusBtn.disabled = disabled;
+        if (disabled) {
+          setBtn.style.opacity = '0.5';
+        } else {
+          setBtn.style.opacity = '1';
+        }
+      }
+
+      async function fetchInfo(){
+        try {
+          const r = await fetch('/api/info');
+          const j = await r.json();
+          if (!j.adminConfigured) {
+            // show big instructions and disable configure button
+            banner.classList.add('warn');
+            banner.style.display = 'block';
+            banner.innerHTML = '<strong style="color:var(--danger);">SETUP REQUIRED — ADMIN_TOKEN NOT SET</strong>' +
+              '<p style="margin:8px 0;color:var(--muted);">This server process is running without ADMIN_TOKEN configured. You must set ADMIN_TOKEN in the Codespace environment or create a .env file and restart the server. Until then you cannot configure the proxy.</p>' +
+              '<p style="margin:8px 0;"><strong>Quick steps (copy/paste):</strong></p>' +
+              '<pre># Generate a token (example)\nopenssl rand -hex 32\n\n# Create .env (DO NOT commit this file)\ncat > .env <<EOF\nADMIN_TOKEN=YOUR_GENERATED_TOKEN\nPORT=8080\nEOF\n\n# Restart the server\nnpm start</pre>' +
+              '<p style="margin:8px 0;color:var(--muted)">After restarting with ADMIN_TOKEN set, refresh this page and you will be able to configure the proxy.</p>';
+            setDisabled(true);
+            statusDot.textContent = '○';
+            statusDot.style.color = '#ffb86b';
+            return;
+          } else {
+            banner.style.display = 'none';
+            setDisabled(false);
+            // reflect configured target status
+            if (j.configuredTarget) {
+              show('Proxy is configured. Target: ' + j.target);
+              statusDot.textContent = '●';
+              statusDot.style.color = '#1db954';
+            } else {
+              show('No target configured yet.');
+              statusDot.textContent = '○';
+              statusDot.style.color = '#ffb86b';
+            }
+          }
+        } catch (e) {
+          banner.style.display = 'block';
+          banner.classList.remove('warn');
+          banner.innerHTML = '<strong style="color:var(--accent);">Unable to contact /api/info</strong><p style="color:var(--muted)">Network error: ' + e.message + '</p>';
+          setDisabled(true);
+        }
+      }
+
       async function checkStatus(){
         const token = tokenInput.value.trim();
-        if(!token){ show('Set ADMIN_TOKEN in the field to check status.', false); return; }
+        if(!token){ show('Paste your ADMIN_TOKEN to check status.', false); return; }
         try{
           const r = await fetch('/api/status', { headers: { 'x-admin-token': token } });
           if(r.status === 200){
@@ -187,7 +250,7 @@
             statusDot.textContent = '●';
             statusDot.style.color = '#1db954';
           } else {
-            show('Error: ' + (j && j.error ? j.error : r.status), false);
+            show('Error: ' + (j && j.message ? j.message : (j && j.error ? j.error : r.status)), false);
           }
         }catch(e){
           show('Network error: ' + e.message, false);
@@ -197,9 +260,10 @@
       setBtn.addEventListener('click', setTarget);
       statusBtn.addEventListener('click', checkStatus);
 
-      // initial status try
+      // initial check
       statusDot.textContent = '○';
       statusDot.style.color = '#ffb86b';
+      fetchInfo();
     })();
   </script>
 </body>
