@@ -1,3 +1,8 @@
+// server.js
+// Codespace proxy server with editable ADMIN_TOKEN options.
+// WARNING: Changing the token in this file is simple but insecure if you commit it.
+// DO NOT commit a real secret to your repo. Use .env or Codespaces secrets for real use.
+
 const express = require('express');
 const { createProxyServer } = require('http-proxy');
 const morgan = require('morgan');
@@ -6,9 +11,25 @@ const path = require('path');
 
 require('dotenv').config();
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null;
+// HOW TO CHANGE THE TOKEN (pick one):
+// 1) Preferred & persistent: set ADMIN_TOKEN in the environment (.env or Codespaces env) and restart the process.
+//    Example .env:
+//      ADMIN_TOKEN=your-generated-token
+//      PORT=8080
+// 2) Quick edit: directly change the fallbackToken string below and restart the process.
+//    (Only do this in a private Codespace and DO NOT commit the change.)
+// 3) Runtime change (temporary, in-memory): call POST /api/change-admin-token with current token + newToken (only works while server runs).
+
+// Fallback token (file-editable). Change this string in server.js if you prefer editing the file.
+// NOTE: DO NOT commit a real secret to your repo. This fallback is for convenience only.
+const fallbackToken = 'changeme-REPLACE_THIS';
+
+// The server will prefer environment ADMIN_TOKEN; if not present it will use fallbackToken.
+// This variable is mutable so we can change it at runtime via the protected endpoint.
+let ADMIN_TOKEN = process.env.ADMIN_TOKEN || fallbackToken;
+
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
-const ADMIN_MODE = Boolean(ADMIN_TOKEN);
+const ADMIN_MODE = Boolean(ADMIN_TOKEN && ADMIN_TOKEN !== '');
 
 const app = express();
 app.use(morgan('tiny'));
@@ -22,49 +43,33 @@ let config = {
 
 // Helpful instructions for people who forgot to set ADMIN_TOKEN
 const ADMIN_INSTRUCTIONS = [
-  "ADMIN_TOKEN is NOT set for this Codespace / server process.",
+  "ADMIN_TOKEN is not set via environment. The server is using the fallback token in server.js.",
   "",
-  "You must set a strong ADMIN_TOKEN environment variable to configure the proxy.",
-  "Example token generation commands:",
-  "  # OpenSSL (Unix/macOS):",
+  "You can change the token in one of these ways:",
+  "  1) Set ADMIN_TOKEN in the environment (.env or Codespaces environment) and restart (recommended).",
+  "  2) Edit server.js and change the fallbackToken value, then restart the server (quick but DON'T commit).",
+  "  3) Change it at runtime (temporary): POST /api/change-admin-token with the current token (see below).",
+  "",
+  "To generate a token, use:",
   "  openssl rand -hex 32",
-  "  # Python:",
   "  python3 -c \"import secrets; print(secrets.token_urlsafe(32))\"",
-  "  # Node:",
-  "  node -e \"console.log(require('crypto').randomBytes(24).toString('hex'))\"",
-  "",
-  "How to set it:",
-  "  - Create a .env file in the Codespace (DO NOT commit it):",
-  "      ADMIN_TOKEN=your-generated-token",
-  "      PORT=8080",
-  "    Then restart the server (npm start).",
-  "  - OR set the Codespaces Environment variable / Secrets for the Codespace before starting.",
-  "",
-  "Once ADMIN_TOKEN is set in the environment, restart this process and you can configure the proxy via:",
-  "  curl -X POST https://<your-codespace-url>/api/config \\",
-  "    -H \"Content-Type: application/json\" \\",
-  "    -H \"x-admin-token: YOUR_ADMIN_TOKEN\" \\",
-  "    -d '{\"target\":\"https://example.com\"}'",
   ""
 ];
 
-// If ADMIN_TOKEN missing, print big instructions but keep server running in a safe read-only mode.
-if (!ADMIN_MODE) {
-  console.error("\n**************************************************************************");
-  console.error("*** WARNING: ADMIN_TOKEN is not set. Server will run in read-only mode. ***");
-  console.error("**************************************************************************\n");
+if (!process.env.ADMIN_TOKEN) {
+  console.error("\n*** WARNING: ADMIN_TOKEN not set in environment. Using fallbackToken from server.js. ***");
+  console.error("If you're testing locally this is OK; for anything public set ADMIN_TOKEN via environment and restart.");
   ADMIN_INSTRUCTIONS.forEach(line => console.error(line));
-  console.error("\nThe server will not accept /api/config or proxying until ADMIN_TOKEN is set and the process is restarted.\n");
 } else {
-  console.log('ADMIN_TOKEN is set. Admin endpoints are enabled.');
+  console.log('ADMIN_TOKEN found in environment. Admin endpoints enabled.');
 }
 
+// Middleware: require the current admin token
 function requireAdminToken(req, res, next) {
-  if (!ADMIN_MODE) {
-    // clear, helpful message for callers
+  if (!ADMIN_TOKEN) {
     return res.status(503).json({
       error: 'admin_token_not_set',
-      message: 'ADMIN_TOKEN environment variable is not set on the server. See GET /api/info for setup instructions.'
+      message: 'ADMIN_TOKEN is not set on the server. See GET /api/info for setup instructions.'
     });
   }
 
@@ -84,14 +89,29 @@ function validateHttpUrl(str) {
   }
 }
 
-// Public info endpoint so the UI can detect missing ADMIN_TOKEN and show instructions
+// Public info endpoint — useful for UI to detect admin presence and origin of token
 app.get('/api/info', (req, res) => {
   res.json({
-    adminConfigured: ADMIN_MODE,
+    adminConfigured: Boolean(process.env.ADMIN_TOKEN),
+    usingFallbackToken: !Boolean(process.env.ADMIN_TOKEN),
     configuredTarget: !!config.target,
     target: config.target || null,
-    instructions: ADMIN_MODE ? null : ADMIN_INSTRUCTIONS.join('\n')
+    instructions: (!process.env.ADMIN_TOKEN) ? ADMIN_INSTRUCTIONS.join('\n') : null,
+    note: 'If using fallbackToken (editable in server.js), change it here and restart to persist, or use /api/change-admin-token to change in-memory (temporary).'
   });
+});
+
+// Endpoint to change the admin token at runtime (in-memory only)
+// Security: requires the current valid token in x-admin-token (or Authorization).
+// WARNING: This change is not persisted to disk — a server restart will revert to the env or fallbackToken value.
+app.post('/api/change-admin-token', requireAdminToken, (req, res) => {
+  const { newToken } = req.body;
+  if (!newToken || typeof newToken !== 'string' || newToken.length < 16) {
+    return res.status(400).json({ error: 'invalid_new_token', message: 'newToken required (string, min length 16).' });
+  }
+  ADMIN_TOKEN = newToken;
+  console.log('ADMIN_TOKEN was changed at runtime (in-memory). Remember this is not persisted across restarts.');
+  res.json({ message: 'admin_token_changed_in_memory', note: 'This change is temporary and will be lost on restart.' });
 });
 
 // Set the upstream target for this proxy instance (admin only)
@@ -135,11 +155,10 @@ proxy.on('error', (err, req, res) => {
 });
 
 app.use('/p', (req, res) => {
-  if (!ADMIN_MODE) {
-    // Very explicit error when ADMIN_TOKEN missing
+  if (!ADMIN_TOKEN) {
     return res.status(503).json({
       error: 'admin_token_not_set',
-      message: 'Proxying is disabled because ADMIN_TOKEN environment variable is not set on the server. See /api/info for instructions.'
+      message: 'Proxying is disabled because ADMIN_TOKEN is not set on the server. See /api/info for instructions.'
     });
   }
   if (!config.target) {
@@ -168,8 +187,9 @@ app.use((req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Codespace proxy server listening on port ${PORT}`);
-  console.log(`Open / to view the UI. If ADMIN_TOKEN is set the admin endpoints are /api/config and /api/status.`);
-  if (!ADMIN_MODE) {
-    console.log('\nADMIN_TOKEN is NOT set. The UI will show setup instructions. Set ADMIN_TOKEN in environment and restart to enable admin actions.\n');
+  console.log(`Open / to view the UI. If ADMIN_TOKEN is set in environment, admin endpoints are enabled.`);
+  if (!process.env.ADMIN_TOKEN) {
+    console.log('\nNOTE: ADMIN_TOKEN was NOT set via environment. The server is using fallbackToken from server.js.');
+    console.log('Edit fallbackToken in server.js or set ADMIN_TOKEN in .env/Codespaces env and restart to persist a new token.\n');
   }
 });
